@@ -1,0 +1,39 @@
+name: Render
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  render:
+    name: UML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Branch
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git checkout render
+          git merge master --no-ff
+      - uses: ngupuk/action-plantuml@main
+        with:
+          cmd: plantuml src/*.pu src/**/*.pu **/*.pu -o /github/workspace/out
+
+      - name: Rename
+        run: |
+          rm -rf rendered-images
+          mv out rendered-images
+      - name: Push
+        run: |
+          git add .
+          git commit -m "Render: ${{ github.event.head_commit.message }}"
+          git push origin render
+      - uses: actions/upload-artifact@v2
+        name: Upload Artifact
+        with:
+          name: diagrams
+          path: rendered-images
